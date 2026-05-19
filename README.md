@@ -304,6 +304,30 @@ vgchange -ay
 exit
 ```
 
+If `exit` drops back to the emergency shell (VG is active but boot still fails), mount sysroot manually and chroot in to apply a fix:
+
+```bash
+# 1. Identify your root LV and boot device
+vgs                    # note VG name (e.g. ol)
+lsblk                  # identify the /boot partition (usually ~1 GB, e.g. /dev/sda1)
+
+# 2. Mount root LV to /sysroot
+mount /dev/ol/root /sysroot          # adjust VG name if different
+
+# 3. Mount /boot if it is a separate partition
+mount /dev/sda1 /sysroot/boot        # adjust device as needed
+
+# 4. Bind virtual filesystems
+mount --bind /dev  /sysroot/dev
+mount --bind /proc /sysroot/proc
+mount --bind /sys  /sysroot/sys
+
+# 5. Chroot into the system
+chroot /sysroot
+```
+
+From inside the chroot, proceed to [Phase 2](#phase-2--gather-evidence) to diagnose, then apply the relevant fix from [Phase 3](#phase-3--permanent-fix).
+
 **Method C: Rescue mode from OL8 ISO**
 
 1. Boot from OL8 installation media
