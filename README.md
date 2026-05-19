@@ -354,6 +354,19 @@ dracut --list-modules 2>/dev/null | grep lvm
 
 Apply only after confirming the diagnosis from Phase 2.
 
+> **UEFI vs BIOS — GRUB config path**
+>
+> Before running `grub2-mkconfig`, confirm which path applies to your system:
+> ```bash
+> [ -d /sys/firmware/efi ] && echo "UEFI" || echo "BIOS"
+> ```
+> | Firmware | GRUB config path |
+> |---|---|
+> | BIOS | `/boot/grub2/grub.cfg` |
+> | UEFI | `/boot/efi/EFI/redhat/grub.cfg` |
+>
+> Using the wrong path will silently write to the wrong file and the fix will have no effect on boot.
+
 **Fix A: GRUB references wrong VG name**
 
 Use when `vgs` shows `ol` but GRUB has `rhel`.
@@ -364,8 +377,11 @@ vi /etc/default/grub
 # Change: rd.lvm.lv=rhel/root  →  rd.lvm.lv=ol/root
 # Change: rd.lvm.lv=rhel/swap  →  rd.lvm.lv=ol/swap
 
-# Regenerate GRUB config
+# Regenerate GRUB config — choose the path that matches your firmware (see note above)
+# BIOS:
 grub2-mkconfig -o /boot/grub2/grub.cfg
+# UEFI:
+grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
 
 # Regenerate initramfs for the current kernel
 dracut --force --verbose /boot/initramfs-$(uname -r).img $(uname -r)
@@ -391,7 +407,10 @@ Use when the VG is named `rhel` on disk but GRUB references `ol`.
 ```bash
 vgrename rhel ol
 sed -i 's|/dev/mapper/rhel-|/dev/mapper/ol-|g' /etc/fstab
+# BIOS:
 grub2-mkconfig -o /boot/grub2/grub.cfg
+# UEFI:
+grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
 dracut --force /boot/initramfs-$(uname -r).img $(uname -r)
 reboot
 ```
